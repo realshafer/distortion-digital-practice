@@ -1,127 +1,179 @@
 let sound1, sound2, sound3, sound4, sound5, sound6, sound7, sound8;
-let originalSound;
-let playButton, stopButton, answerButton, originalButton;
-let player, fileName, fSize;
+let original1, original2;
+let questionButton, original1Button, original2Button, answerButton, nextButton;
+let player, fileName;
+let answerRevealed = false;
 
 function preload() {
+  // Question pool
   sound1 = loadSound('assets/Eno_DigitalClip_6dB.mp3');
   sound2 = loadSound('assets/Eno_DigitalClip_12dB.mp3');
   sound3 = loadSound('assets/Eno_DigitalClip_18dB.mp3');
   sound4 = loadSound('assets/Eno_DigitalClip_24dB.mp3');
-
-  // 🔊 original file (NOT part of random pool)
-  originalSound = loadSound('assets/EnoOriginal.mp3');
+  sound5 = loadSound('assets/Hoff_DigitalClip_6dB.mp3');
+  sound6 = loadSound('assets/Hoff_DigitalClip_12dB.mp3');
+  sound7 = loadSound('assets/Hoff_DigitalClip_18dB.mp3');
+  sound8 = loadSound('assets/Hoff_DigitalClip_24dB.mp3');
+  // Originals
+  original1 = loadSound('assets/EnoOriginal.mp3');
+  original2 = loadSound('assets/HoffOriginal.mp3');
 }
 
 function setup(){  
   createCanvas(windowWidth, windowHeight);
   background(0);
-
-  fSize = width / 10;
-  textAlign(CENTER);
+  textAlign(CENTER, CENTER);
   fill(255);
 
   // Title
-  let titleSize = fSize / 2;
-  textSize(titleSize);
-  text("Digital Clipping Practice", width / 2, height / 9);
+  textSize(36);
+  text("Digital Clipping Practice", width/2, height/9);
 
   // Subtitle
-  let subtitleSize = fSize / 4;
-  textSize(subtitleSize);
-  let lineSpacing = subtitleSize * 1.5;
-  text("+6, +12, +18, +24", width / 2, height / 9 + lineSpacing);
+  textSize(20);
+  text("+6dB, +12dB, +18dB, +24dB", width/2, height/9 + 40);
 
-  // choose first random sound
-  chooseSound();
+  // --- Layout variables ---
+  let rowH = 60;
+  let col1X = width/4;
+  let col2X = width/2;
+  let startY = height/3;  // start layout lower down
 
-  // Button sizing + layout
-  let btnW = width * 0.25;
-  let btnH = 60;
-  let buttonYStart = height / 3;
+  // QUESTION row
+  createDiv("QUESTION")
+    .position(col1X - 150, startY)
+    .style("color","white").style("font-size","24px");
+  questionButton = createButton("PLAY");
+  styleButton(questionButton, col2X, startY, "#00E938");
+  questionButton.mousePressed(toggleQuestion);
 
-  // PLAY button
-  playButton = createButton('PLAY');
-  playButton.size(btnW, btnH);
-  playButton.position(width/2 - btnW/2, buttonYStart);
-  playButton.style('font-size', '20px');
-  playButton.style('background-color','#00E938');
-  playButton.style('color','#000000');  
-  playButton.mousePressed(togglePlay);
+  // ORIGINAL 1 row
+  createDiv("ORIGINAL 1")
+    .position(col1X - 150, startY + rowH)
+    .style("color","white").style("font-size","24px");
+  original1Button = createButton("PLAY");
+  styleButton(original1Button, col2X, startY + rowH, "#00E938");
+  original1Button.mousePressed(toggleOriginal1);
 
-  // STOP button
-  stopButton = createButton('STOP');
-  stopButton.size(btnW, btnH);
-  stopButton.position(width/2 - btnW/2, buttonYStart + btnH + 20);
-  stopButton.style('font-size', '20px');
-  stopButton.style('background-color','#F80F05');
-  stopButton.style('color','#FDFAFA');
-  stopButton.mousePressed(stopSound);
+  // ORIGINAL 2 row
+  createDiv("ORIGINAL 2")
+    .position(col1X - 150, startY + rowH*2)
+    .style("color","white").style("font-size","24px");
+  original2Button = createButton("PLAY");
+  styleButton(original2Button, col2X, startY + rowH*2, "#00E938");
+  original2Button.mousePressed(toggleOriginal2);
 
-  // ANSWER button
-  answerButton = createButton('ANSWER');
-  answerButton.size(btnW, btnH);
-  answerButton.position(width/2 - btnW/2, buttonYStart + (btnH + 20) * 2);
-  answerButton.style('font-size', '20px');
-  answerButton.style('background-color','#03A9F4');
-  answerButton.style('color','#000000');  
+  // ANSWER row
+  createDiv("ANSWER")
+    .position(col1X - 150, startY + rowH*3)
+    .style("color","white").style("font-size","24px");
+  answerButton = createButton("REVEAL");
+  styleButton(answerButton, col2X, startY + rowH*3, "#03A9F4");
   answerButton.mousePressed(showAnswer);
 
-  // ⭐ original button
-  originalButton = createButton('ORIGINAL SOUND');
-  originalButton.size(btnW, btnH);
-  originalButton.position(width/2 - btnW/2, buttonYStart + (btnH + 20) * 3);
-  originalButton.style('font-size', '20px');
-  originalButton.style('background-color','#FFC107');
-  originalButton.style('color','#000000');  
-  originalButton.mousePressed(playOriginalSound);
+  // NEXT QUESTION button (full row)
+  nextButton = createButton("NEXT QUESTION");
+  nextButton.position(width/2 - 100, startY + rowH*4 + 20);
+  nextButton.size(200, rowH);
+  nextButton.style("font-size","20px");
+  nextButton.style("background-color","#FFC107");
+  nextButton.mousePressed(nextQuestion);
+
+  // pick first sound
+  chooseSound();
 }
 
-function togglePlay() {
+// ---- Utility: style buttons consistently ----
+function styleButton(btn, x, y, color) {
+  btn.position(x, y);
+  btn.size(120, 50);
+  btn.style("font-size","20px");
+  btn.style("background-color", color);
+  btn.style("color","#000");
+}
+
+// ---- Toggle functions ----
+function toggleQuestion() {
   if (player && player.isPlaying()) {
-    // optional: player.pause();
+    player.stop();
+    resetButton(questionButton, "PLAY", "#00E938");
   } else {
-    chooseSound();
+    stopAll();
     player.amp(0.8);
     player.loop();
-    answerButton.html("ANSWER");
+    questionButton.html("STOP").style("background-color","#F80F05");
   }
 }
 
-function stopSound(){
+function toggleOriginal1() {
+  if (original1.isPlaying()) {
+    original1.stop();
+    resetButton(original1Button, "PLAY", "#00E938");
+  } else {
+    stopAll();
+    original1.amp(0.8);
+    original1.loop();
+    original1Button.html("STOP").style("background-color","#F80F05");
+  }
+}
+
+function toggleOriginal2() {
+  if (original2.isPlaying()) {
+    original2.stop();
+    resetButton(original2Button, "PLAY", "#00E938");
+  } else {
+    stopAll();
+    original2.amp(0.8);
+    original2.loop();
+    original2Button.html("STOP").style("background-color","#F80F05");
+  }
+}
+
+function resetButton(btn, label, color) {
+  btn.html(label);
+  btn.style("background-color", color);
+}
+
+function stopAll(){
   if (player) player.stop();
-  if (originalSound.isPlaying()) originalSound.stop(); // also stop original if active
+  if (original1) original1.stop();
+  if (original2) original2.stop();
+  resetButton(questionButton, "PLAY", "#00E938");
+  resetButton(original1Button, "PLAY", "#00E938");
+  resetButton(original2Button, "PLAY", "#00E938");
 }
 
 function showAnswer() {
   answerButton.html(fileName);
+  answerRevealed = true;
 }
 
-function playOriginalSound() {
-  stopSound(); // stop any currently playing sounds first
-  originalSound.amp(0.8);
-  originalSound.loop();
+function nextQuestion() {
+  stopAll();
+  chooseSound();
+  resetButton(answerButton, "REVEAL", "#03A9F4");
+  answerRevealed = false;
 }
 
+// ---- Random sound selection (no 3+ repeats) ----
 let lastChoice = -1;
 let secondLastChoice = -1;
 
 function chooseSound() {
   let choice;
   do {
-    choice = int(random(4));  // 0–3
+    choice = int(random(8));
   } while (choice === lastChoice && choice === secondLastChoice);
 
   secondLastChoice = lastChoice;
   lastChoice = choice;
 
-  if (choice === 0) {
-    player = sound1; fileName = "+6 Digital Clipping";
-  } else if (choice === 1) {
-    player = sound2; fileName = "+12 Digital Clipping";
-  } else if (choice === 2) {
-    player = sound3; fileName = "+18 Digital Clipping";
-  } else if (choice === 3) {
-    player = sound4; fileName = "+24 Digital Clipping";
-  }
+  if (choice === 0) { player = sound1; fileName = "+6dB"; }
+  else if (choice === 1) { player = sound2; fileName = "+12dB"; }
+  else if (choice === 2) { player = sound3; fileName = "+18dB"; }
+  else if (choice === 3) { player = sound4; fileName = "+24dB"; }
+  else if (choice === 4) { player = sound5; fileName = "+6dB"; }
+  else if (choice === 5) { player = sound6; fileName = "+12dB"; }
+  else if (choice === 6) { player = sound7; fileName = "+18dB"; }
+  else { player = sound8; fileName = "+24dB"; }
 }
