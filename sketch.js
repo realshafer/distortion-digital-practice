@@ -10,7 +10,7 @@ function preload() {
   sound4 = loadSound('assets/Eno_DigitalClip_24dB.mp3');
 
   // 🔊 original file (NOT part of random pool)
-  originalSound = loadSound('assets/Eno_original.mp3');
+  originalSound = loadSound('assets/EnoOriginal.mp3');
 }
 
 function setup(){  
