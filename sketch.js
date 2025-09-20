@@ -30,7 +30,7 @@ function setup(){
   text("Digital Clipping Practice", width/2, height/9);
 
   // Subtitle
-  textSize(36);
+  textSize(28);
   text("+6dB, +12dB, +18dB, +24dB", width/2, height/9 + 40);
 
   // --- Layout variables ---
